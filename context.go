@@ -3,7 +3,7 @@ package coalmine
 import (
 	"context"
 
-	"coalmine/killswitch"
+	"github.com/jveski/coalmine/killswitch"
 )
 
 type valueKey string

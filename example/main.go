@@ -7,8 +7,8 @@ import (
 	"net"
 	"net/http"
 
-	"coalmine"
-	"coalmine/killswitch"
+	"github.com/jveski/coalmine"
+	"github.com/jveski/coalmine/killswitch"
 )
 
 var (

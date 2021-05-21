@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"coalmine/killswitch"
+	"github.com/jveski/coalmine/killswitch"
 )
 
 func TestFeatureNoMatchers(t *testing.T) {
