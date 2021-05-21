@@ -4,7 +4,32 @@ package coalmine
 import (
 	"context"
 	"hash/fnv"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var (
+	enabledMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "coalmine_feature_enabled_total",
+			Help: "Number of times a feature is enabled.",
+		},
+		[]string{"feature"},
+	)
+
+	killswitchMetric = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "coalmine_feature_killswitch_total",
+			Help: "Number of times a feature is disabled by a killswitch.",
+		},
+		[]string{"feature"},
+	)
+)
+
+func init() {
+	prometheus.MustRegister(enabledMetric)
+	prometheus.MustRegister(killswitchMetric)
+}
 
 // Feature represents a unit of functionality that can be enabled and disabled.
 type Feature struct {
@@ -18,10 +43,12 @@ func (f *Feature) Enabled(ctx context.Context) bool {
 		return enabled
 	}
 	if ks := getKillswitch(ctx); ks != nil && ks.Enabled(ctx, f.name) {
+		killswitchMetric.WithLabelValues(f.name).Inc()
 		return false
 	}
 	for _, matcher := range f.matchers {
 		if matcher.evaluate(ctx) {
+			enabledMetric.WithLabelValues(f.name).Inc()
 			return true
 		}
 	}
