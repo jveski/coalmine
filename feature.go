@@ -39,7 +39,10 @@ type Feature struct {
 
 // Enabled returns true if the feature should be enabled given the current context.
 func (f *Feature) Enabled(ctx context.Context) bool {
-	if enabled, present := checkOverride(ctx, f.name); present {
+	if enabled, present := getFeatureOverride(ctx, f.name); present {
+		return enabled
+	}
+	if enabled, present := getGlobalOverride(ctx); present {
 		return enabled
 	}
 	if ks := getKillswitch(ctx); ks != nil && ks.Enabled(ctx, f.name) {
