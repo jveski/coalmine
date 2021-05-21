@@ -3,18 +3,20 @@
 Get features into production safely using canaries.
 
 
-## Ready for production?
-
-NO!
-
-
 ## Usage
 
-See ./example
+See ./example for a complete example.
 
+```go
+const regionKey coalmine.Key = "region"
 
-## TODO
+var myFeature = coalmine.NewFeature("myFeature",
+	coalmine.WithExactMatch(regionKey, "westus"))
 
-- Killswitch implementation (blob storage? k8s?)
-- Prom metrics
-- Better docs
+func main() {
+	ctx := coalmine.WithValue(context.Background(), regionKey, "westus")
+    if coalmine.Enabled(ctx) {
+		// enabled!
+	}
+}
+```

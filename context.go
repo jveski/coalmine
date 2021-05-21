@@ -22,7 +22,7 @@ func WithValue(ctx context.Context, key Key, value string) context.Context {
 	return context.WithValue(ctx, valueKey(key), value)
 }
 
-// WithKillswitch registers a killswitch.
+// WithKillswitch registers a killswitch. See coalmine/killswitch documentation for more.
 func WithKillswitch(ctx context.Context, ks killswitch.Killswitch) context.Context {
 	return context.WithValue(ctx, killswitchKey{}, ks)
 }

@@ -5,10 +5,7 @@ import (
 	"sync"
 )
 
-// Killswitch is used to signal that a feature needs to be forcibly disabled.
-//
-// Practically, this is used to disable a feature when something is believed
-// to be wrong with it.
+// Killswitch is used to signal that a feature needs to be forcibly disabled at runtime.
 type Killswitch interface {
 	Enabled(ctx context.Context, feature string) bool
 }
