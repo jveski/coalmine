@@ -1,4 +1,4 @@
-module coalmine
+module github.com/jveski/coalmine
 
 go 1.16
 
