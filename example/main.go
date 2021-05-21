@@ -1,0 +1,70 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"net"
+	"net/http"
+
+	"coalmine"
+	"coalmine/killswitch"
+)
+
+var (
+	addr     = flag.String("addr", ":8080", "address to listen on")
+	kill     = flag.Bool("kill", false, "force disable the feature")
+	override = flag.Bool("override", false, "force enable the feature")
+)
+
+const (
+	regionKey     coalmine.Key = "region"
+	customerIDKey coalmine.Key = "customerID"
+)
+
+var (
+	myFeature = coalmine.NewFeature("myFeature",
+		// enable for 50% of customers in westus
+		coalmine.WithAND(
+			coalmine.WithExactMatch(regionKey, "westus"),
+			coalmine.WithPercentage(customerIDKey, 50),
+		),
+
+		// enable for all customers in southcentralus
+		coalmine.WithExactMatch(regionKey, "southcentralus"),
+	)
+)
+
+func main() {
+	flag.Parse()
+
+	// Set values that live for the life of the service on the base context
+	baseCtx := context.Background()
+	baseCtx = coalmine.WithValue(baseCtx, regionKey, "westus")
+
+	// Configure a killswitch to forcibly disable the feature if anything goes wrong
+	ks := killswitch.NewMemory()
+	baseCtx = coalmine.WithKillswitch(baseCtx, ks)
+
+	if *kill {
+		ks.Set("myFeature")
+	}
+
+	// Force the feature on (useful in tests)
+	if *override {
+		baseCtx = coalmine.WithOverride(baseCtx, myFeature, true)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		// Set additional values scoped to this individual request
+		ctx := coalmine.WithValue(r.Context(), customerIDKey, r.URL.Query().Get("customer"))
+		fmt.Fprintf(w, "feature enabled: %t\n", myFeature.Enabled(ctx))
+	}
+
+	svr := http.Server{
+		BaseContext: func(net.Listener) context.Context { return baseCtx },
+		Handler:     http.HandlerFunc(handler),
+		Addr:        *addr,
+	}
+	panic(svr.ListenAndServe())
+}
