@@ -11,7 +11,7 @@ import (
 var (
 	enabledMetric = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "coalmine_feature_enabled_total",
+			Name: "coalmine_feature_enable_total",
 			Help: "Number of times a feature is enabled.",
 		},
 		[]string{"feature"},
