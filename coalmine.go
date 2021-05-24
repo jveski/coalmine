@@ -20,14 +20,6 @@ var (
 		},
 		[]string{"feature"},
 	)
-
-	killswitchMetric = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "coalmine_feature_killswitch_total",
-			Help: "Number of times a feature is disabled by a killswitch.",
-		},
-		[]string{"feature"},
-	)
 )
 
 var killswitchCache = sync.Map{}
@@ -40,7 +32,6 @@ func warmKillswitchCache() {
 
 func init() {
 	prometheus.MustRegister(enabledMetric)
-	prometheus.MustRegister(killswitchMetric)
 	warmKillswitchCache()
 }
 
@@ -56,7 +47,6 @@ func (f *Feature) Enabled(ctx context.Context) bool {
 		return enabled
 	}
 	if _, ok := killswitchCache.Load(f.name); ok {
-		killswitchMetric.WithLabelValues(f.name).Inc()
 		return false
 	}
 	for _, matcher := range f.matchers {
