@@ -136,41 +136,6 @@ func TestFeatureOverride(t *testing.T) {
 	})
 }
 
-func TestFeatureGlobalOverride(t *testing.T) {
-	ctx := context.Background()
-	key, value := Key("test-key"), "test-value"
-	f := NewFeature(t.Name(), WithExactMatch(key, value))
-
-	t.Run("feature on, override off", func(t *testing.T) {
-		ctx := WithValue(ctx, key, value)
-		ctx = WithGlobalOverride(ctx, false)
-		assert.False(t, f.Enabled(ctx))
-	})
-
-	t.Run("feature on, override on", func(t *testing.T) {
-		ctx := WithValue(ctx, key, value)
-		ctx = WithGlobalOverride(ctx, true)
-		assert.True(t, f.Enabled(ctx))
-	})
-
-	t.Run("feature off, override off", func(t *testing.T) {
-		ctx := WithGlobalOverride(ctx, false)
-		assert.False(t, f.Enabled(ctx))
-	})
-
-	t.Run("feature off, override on", func(t *testing.T) {
-		ctx := WithGlobalOverride(ctx, true)
-		assert.True(t, f.Enabled(ctx))
-	})
-
-	t.Run("prove other feature is matched", func(t *testing.T) {
-		ctx := WithGlobalOverride(ctx, true)
-
-		f2 := NewFeature("another feature")
-		assert.True(t, f2.Enabled(ctx))
-	})
-}
-
 func TestFeatureOverrideString(t *testing.T) {
 	ctx := context.Background()
 

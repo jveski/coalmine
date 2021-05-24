@@ -14,7 +14,6 @@ var (
 	addr         = flag.String("addr", ":8080", "address to listen on")
 	kill         = flag.Bool("kill", false, "force disable the feature")
 	featOverride = flag.Bool("feat-override", false, "force enable the feature")
-	override     = flag.Bool("override", false, "force enable all features")
 )
 
 const (
@@ -49,11 +48,6 @@ func main() {
 	// Force the feature on (useful in tests)
 	if *featOverride {
 		baseCtx = coalmine.WithFeatureOverride(baseCtx, myFeature, true)
-	}
-
-	// Or force all features on
-	if *featOverride {
-		baseCtx = coalmine.WithGlobalOverride(baseCtx, true)
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {

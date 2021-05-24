@@ -55,9 +55,6 @@ func (f *Feature) Enabled(ctx context.Context) bool {
 	if enabled, present := getFeatureOverride(ctx, f.name); present {
 		return enabled
 	}
-	if enabled, present := getGlobalOverride(ctx); present {
-		return enabled
-	}
 	if _, ok := killswitchCache.Load(f.name); ok {
 		killswitchMetric.WithLabelValues(f.name).Inc()
 		return false
@@ -170,21 +167,6 @@ func WithOverrideString(ctx context.Context, prfx, str string) context.Context {
 		ctx = context.WithValue(ctx, featureOverrideKey(cleaned), true)
 	}
 	return ctx
-}
-
-type globalOverrideKey struct{}
-
-// WithGlobalOverride forces all features to be either enabled or disabled. Useful in tests.
-func WithGlobalOverride(ctx context.Context, enable bool) context.Context {
-	return context.WithValue(ctx, globalOverrideKey{}, enable)
-}
-
-func getGlobalOverride(ctx context.Context) (bool, bool) {
-	val := ctx.Value(globalOverrideKey{})
-	if val == nil {
-		return false, false
-	}
-	return val.(bool), true
 }
 
 type valueKey string
