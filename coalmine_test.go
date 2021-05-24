@@ -108,28 +108,28 @@ func TestFeatureOverride(t *testing.T) {
 
 	t.Run("feature on, override off", func(t *testing.T) {
 		ctx := WithValue(ctx, key, value)
-		ctx = WithFeatureOverride(ctx, f, false)
+		ctx = WithOverride(ctx, f, false)
 		assert.False(t, f.Enabled(ctx))
 	})
 
 	t.Run("feature on, override on", func(t *testing.T) {
 		ctx := WithValue(ctx, key, value)
-		ctx = WithFeatureOverride(ctx, f, true)
+		ctx = WithOverride(ctx, f, true)
 		assert.True(t, f.Enabled(ctx))
 	})
 
 	t.Run("feature off, override off", func(t *testing.T) {
-		ctx := WithFeatureOverride(ctx, f, false)
+		ctx := WithOverride(ctx, f, false)
 		assert.False(t, f.Enabled(ctx))
 	})
 
 	t.Run("feature off, override on", func(t *testing.T) {
-		ctx := WithFeatureOverride(ctx, f, true)
+		ctx := WithOverride(ctx, f, true)
 		assert.True(t, f.Enabled(ctx))
 	})
 
 	t.Run("prove other feature not matched", func(t *testing.T) {
-		ctx := WithFeatureOverride(ctx, f, true)
+		ctx := WithOverride(ctx, f, true)
 
 		f2 := NewFeature("some other feature")
 		assert.False(t, f2.Enabled(ctx))

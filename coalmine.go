@@ -43,7 +43,7 @@ type Feature struct {
 
 // Enabled returns true if the feature should be enabled given the current context.
 func (f *Feature) Enabled(ctx context.Context) bool {
-	if enabled, present := getFeatureOverride(ctx, f.name); present {
+	if enabled, present := getOverride(ctx, f.name); present {
 		return enabled
 	}
 	if _, ok := killswitchCache.Load(f.name); ok {
@@ -134,15 +134,15 @@ func WithPercentage(key Key, percent uint32) MatcherOption {
 	}
 }
 
-type featureOverrideKey string
+type overrideKey string
 
-// WithFeatureOverride forces the given feature to be either enabled or disabled. Useful in tests.
-func WithFeatureOverride(ctx context.Context, feature *Feature, enable bool) context.Context {
-	return context.WithValue(ctx, featureOverrideKey(feature.name), enable)
+// WithOverride forces the given feature to be either enabled or disabled. Useful in tests.
+func WithOverride(ctx context.Context, feature *Feature, enable bool) context.Context {
+	return context.WithValue(ctx, overrideKey(feature.name), enable)
 }
 
-func getFeatureOverride(ctx context.Context, feature string) (bool /* state */, bool /* present */) {
-	val := ctx.Value(featureOverrideKey(feature))
+func getOverride(ctx context.Context, feature string) (bool /* state */, bool /* present */) {
+	val := ctx.Value(overrideKey(feature))
 	if val == nil {
 		return false, false
 	}
@@ -154,7 +154,7 @@ func getFeatureOverride(ctx context.Context, feature string) (bool /* state */, 
 func WithOverrideString(ctx context.Context, prfx, str string) context.Context {
 	for _, chunk := range strings.Split(str, ",") {
 		cleaned := strings.TrimPrefix(chunk, prfx)
-		ctx = context.WithValue(ctx, featureOverrideKey(cleaned), true)
+		ctx = context.WithValue(ctx, overrideKey(cleaned), true)
 	}
 	return ctx
 }
