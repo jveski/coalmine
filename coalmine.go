@@ -134,15 +134,17 @@ func WithPercentage(key Key, percent uint32) MatcherOption {
 	}
 }
 
-type overrideKey string
+type featureKey string
+
+func newFeatureKey(str string) featureKey { return featureKey(strings.ToLower(str)) }
 
 // WithOverride forces the given feature to be either enabled or disabled. Useful in tests.
 func WithOverride(ctx context.Context, feature *Feature, enable bool) context.Context {
-	return context.WithValue(ctx, overrideKey(feature.name), enable)
+	return context.WithValue(ctx, newFeatureKey(feature.name), enable)
 }
 
 func getOverride(ctx context.Context, feature string) (bool /* state */, bool /* present */) {
-	val := ctx.Value(overrideKey(feature))
+	val := ctx.Value(newFeatureKey(feature))
 	if val == nil {
 		return false, false
 	}
@@ -154,20 +156,22 @@ func getOverride(ctx context.Context, feature string) (bool /* state */, bool /*
 func WithOverrideString(ctx context.Context, prfx, str string) context.Context {
 	for _, chunk := range strings.Split(str, ",") {
 		cleaned := strings.TrimPrefix(chunk, prfx)
-		ctx = context.WithValue(ctx, overrideKey(cleaned), true)
+		ctx = context.WithValue(ctx, newFeatureKey(cleaned), true)
 	}
 	return ctx
 }
 
 type valueKey string
 
+func newValueKey(key Key) valueKey { return valueKey(strings.ToLower(string(key))) }
+
 // WithValue adds a string kv pair to the context for use with matchers.
 func WithValue(ctx context.Context, key Key, value string) context.Context {
-	return context.WithValue(ctx, valueKey(key), value)
+	return context.WithValue(ctx, newValueKey(key), value)
 }
 
 func getValue(ctx context.Context, key Key) string {
-	val := ctx.Value(valueKey(key))
+	val := ctx.Value(newValueKey(key))
 	if val == nil {
 		return ""
 	}

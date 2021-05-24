@@ -3,6 +3,7 @@ package coalmine
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,6 +24,11 @@ func TestFeatureExactMatch(t *testing.T) {
 		assert.True(t, f.Enabled(ctx))
 	})
 
+	t.Run("wrong casing", func(t *testing.T) {
+		ctx := WithValue(ctx, Key("TEST-KEY"), value)
+		assert.True(t, f.Enabled(ctx))
+	})
+
 	t.Run("wrong value", func(t *testing.T) {
 		ctx := WithValue(ctx, key, "wrong value")
 		assert.False(t, f.Enabled(ctx))
@@ -40,6 +46,11 @@ func TestFeaturePercentage(t *testing.T) {
 
 	t.Run("positive", func(t *testing.T) {
 		ctx := WithValue(ctx, key, "1")
+		assert.True(t, f.Enabled(ctx))
+	})
+
+	t.Run("wrong casing", func(t *testing.T) {
+		ctx := WithValue(ctx, Key("TEST-KEY"), "1")
 		assert.True(t, f.Enabled(ctx))
 	})
 
@@ -142,6 +153,12 @@ func TestFeatureOverrideString(t *testing.T) {
 	t.Run("positive", func(t *testing.T) {
 		f := NewFeature(t.Name())
 		ctx := WithOverrideString(ctx, "Foo", "Foo1,Foo"+t.Name())
+		assert.True(t, f.Enabled(ctx))
+	})
+
+	t.Run("wrong casing", func(t *testing.T) {
+		f := NewFeature(t.Name())
+		ctx := WithOverrideString(ctx, "Foo", "Foo1,Foo"+strings.ToUpper(t.Name()))
 		assert.True(t, f.Enabled(ctx))
 	})
 
