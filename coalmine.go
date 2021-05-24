@@ -3,9 +3,11 @@ package coalmine
 
 import (
 	"context"
+	"fmt"
 	"hash/fnv"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -60,8 +62,13 @@ func (f *Feature) Enabled(ctx context.Context) bool {
 	return false
 }
 
+var featureNames = sync.Map{}
+
 // NewFeature allocates a new Feature using the provided matcher options.
 func NewFeature(name string, opts ...MatcherOption) *Feature {
+	if _, ok := featureNames.LoadOrStore(name, struct{}{}); ok {
+		panic(fmt.Errorf("a coalmine feature with the name %q already exists", name))
+	}
 	f := &Feature{
 		name:     name,
 		matchers: make([]*matcher, len(opts)),

@@ -166,7 +166,7 @@ func TestFeatureGlobalOverride(t *testing.T) {
 	t.Run("prove other feature is matched", func(t *testing.T) {
 		ctx := WithGlobalOverride(ctx, true)
 
-		f2 := NewFeature("some other feature")
+		f2 := NewFeature("another feature")
 		assert.True(t, f2.Enabled(ctx))
 	})
 }
@@ -181,4 +181,11 @@ func TestFeatureKillswitch(t *testing.T) {
 	ctx := context.Background()
 	ctx = WithValue(ctx, key, value)
 	assert.False(t, f.Enabled(ctx))
+}
+
+func TestFeatureDuplicateName(t *testing.T) {
+	NewFeature(t.Name())
+	assert.Panics(t, func() {
+		NewFeature(t.Name())
+	})
 }
