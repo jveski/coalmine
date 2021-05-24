@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/jveski/coalmine"
-	"github.com/jveski/coalmine/killswitch"
 )
 
 var (
@@ -43,12 +42,8 @@ func main() {
 	baseCtx := context.Background()
 	baseCtx = coalmine.WithValue(baseCtx, regionKey, "westus")
 
-	// Configure a killswitch to forcibly disable the feature if anything goes wrong
-	ks := killswitch.NewMemory()
-	baseCtx = coalmine.WithKillswitch(baseCtx, ks)
-
 	if *kill {
-		ks.Set("myFeature")
+		// TODO
 	}
 
 	// Force the feature on (useful in tests)

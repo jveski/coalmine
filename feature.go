@@ -4,6 +4,8 @@ package coalmine
 import (
 	"context"
 	"hash/fnv"
+	"os"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -45,7 +47,7 @@ func (f *Feature) Enabled(ctx context.Context) bool {
 	if enabled, present := getGlobalOverride(ctx); present {
 		return enabled
 	}
-	if ks := getKillswitch(ctx); ks != nil && ks.Enabled(ctx, f.name) {
+	if checkKillswitch(f.name) {
 		killswitchMetric.WithLabelValues(f.name).Inc()
 		return false
 	}
@@ -127,4 +129,13 @@ func WithPercentage(key Key, percent uint32) MatcherOption {
 			return h.Sum32()%100 < percent
 		}
 	}
+}
+
+func checkKillswitch(name string) bool {
+	for _, feat := range strings.Split(os.Getenv("COALMINE_KILLSWITCH"), ",") {
+		if feat == name {
+			return true
+		}
+	}
+	return false
 }

@@ -2,11 +2,10 @@ package coalmine
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/jveski/coalmine/killswitch"
 )
 
 func TestFeatureNoMatchers(t *testing.T) {
@@ -176,11 +175,10 @@ func TestFeatureKillswitch(t *testing.T) {
 	key, value := Key("test-key"), "test-value"
 	f := NewFeature(t.Name(), WithExactMatch(key, value))
 
-	ks := killswitch.NewMemory()
-	ks.Set(t.Name())
+	os.Setenv("COALMINE_KILLSWITCH", "someotherfeature,"+t.Name()+",anotherfeature")
+	defer os.Setenv("COALMINE_KILLSWITCH", "")
 
 	ctx := context.Background()
-	ctx = WithKillswitch(ctx, ks)
 	ctx = WithValue(ctx, key, value)
 	assert.False(t, f.Enabled(ctx))
 }

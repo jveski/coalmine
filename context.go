@@ -2,8 +2,6 @@ package coalmine
 
 import (
 	"context"
-
-	"github.com/jveski/coalmine/killswitch"
 )
 
 type featureOverrideKey string
@@ -49,19 +47,4 @@ func getValue(ctx context.Context, key Key) string {
 		return ""
 	}
 	return val.(string)
-}
-
-type killswitchKey struct{}
-
-// WithKillswitch registers a killswitch. See coalmine/killswitch documentation for more.
-func WithKillswitch(ctx context.Context, ks killswitch.Killswitch) context.Context {
-	return context.WithValue(ctx, killswitchKey{}, ks)
-}
-
-func getKillswitch(ctx context.Context) killswitch.Killswitch {
-	val := ctx.Value(killswitchKey{})
-	if val == nil {
-		return nil
-	}
-	return val.(killswitch.Killswitch)
 }
