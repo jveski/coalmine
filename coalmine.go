@@ -102,7 +102,7 @@ func (m *matcher) evaluate(ctx context.Context) bool {
 	return true
 }
 
-// Key is the key of a key/value pair that can be matched on using a Matcher.
+// Key is a case-insensitive string key for context values used by coalmine.
 type Key string
 
 // MatcherOption configures matchers: logical operations against context values set by WithValue.
@@ -159,8 +159,8 @@ func getOverride(ctx context.Context, feature string) (bool /* state */, bool /*
 	return val.(bool), true
 }
 
-// WithOverrideString forces a given list of feature to be enabled. List is specified as a comma-separated
-// string (str) and optional prefix to be removed from each item (prfx).
+// WithOverrideString forces a list of feature to be enabled. Specified as a comma-separated
+// string and optional prefix to be removed from each item.
 func WithOverrideString(ctx context.Context, prfx, str string) context.Context {
 	for _, chunk := range strings.Split(str, ",") {
 		cleaned := strings.TrimPrefix(chunk, prfx)
@@ -173,7 +173,7 @@ type valueKey string
 
 func newValueKey(key Key) valueKey { return valueKey(strings.ToLower(string(key))) }
 
-// WithValue adds a string kv pair to the context for use with matchers.
+// WithValue adds a string kv pair to the context for use with matchers. Keys are case-insensitive.
 func WithValue(ctx context.Context, key Key, value string) context.Context {
 	return context.WithValue(ctx, newValueKey(key), value)
 }
