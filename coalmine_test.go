@@ -177,6 +177,7 @@ func TestFeatureKillswitch(t *testing.T) {
 
 	os.Setenv("COALMINE_KILLSWITCH", "someotherfeature,"+t.Name()+",anotherfeature")
 	defer os.Setenv("COALMINE_KILLSWITCH", "")
+	warmKillswitchCache()
 
 	ctx := context.Background()
 	ctx = WithValue(ctx, key, value)

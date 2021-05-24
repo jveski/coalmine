@@ -30,9 +30,18 @@ var (
 	)
 )
 
+var killswitchCache = sync.Map{}
+
+func warmKillswitchCache() {
+	for _, feat := range strings.Split(os.Getenv("COALMINE_KILLSWITCH"), ",") {
+		killswitchCache.Store(feat, struct{}{})
+	}
+}
+
 func init() {
 	prometheus.MustRegister(enabledMetric)
 	prometheus.MustRegister(killswitchMetric)
+	warmKillswitchCache()
 }
 
 // Feature represents a unit of functionality that can be enabled and disabled.
@@ -49,7 +58,7 @@ func (f *Feature) Enabled(ctx context.Context) bool {
 	if enabled, present := getGlobalOverride(ctx); present {
 		return enabled
 	}
-	if checkKillswitch(f.name) {
+	if _, ok := killswitchCache.Load(f.name); ok {
 		killswitchMetric.WithLabelValues(f.name).Inc()
 		return false
 	}
@@ -181,13 +190,4 @@ func getValue(ctx context.Context, key Key) string {
 		return ""
 	}
 	return val.(string)
-}
-
-func checkKillswitch(name string) bool {
-	for _, feat := range strings.Split(os.Getenv("COALMINE_KILLSWITCH"), ",") {
-		if feat == name {
-			return true
-		}
-	}
-	return false
 }
