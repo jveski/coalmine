@@ -42,20 +42,28 @@ type Feature struct {
 }
 
 // Enabled returns true if the feature should be enabled given the current context.
-func (f *Feature) Enabled(ctx context.Context) bool {
-	if enabled, present := getOverride(ctx, f.name); present {
-		return enabled
+func (f *Feature) Enabled(ctx context.Context) (ok bool) {
+	observer := getObserver(ctx)
+	if observer != nil {
+		defer func() {
+			observer(ctx, f.name, ok)
+		}()
 	}
-	if _, ok := killswitchCache.Load(f.name); ok {
-		return false
+	if enabled, present := getOverride(ctx, f.name); present {
+		ok = enabled
+		return ok
+	}
+	if _, enabled := killswitchCache.Load(f.name); enabled {
+		return ok
 	}
 	for _, matcher := range f.matchers {
 		if matcher.evaluate(ctx) {
 			enabledMetric.WithLabelValues(f.name).Inc()
-			return true
+			ok = true
+			return ok
 		}
 	}
-	return false
+	return ok
 }
 
 var featureNames = sync.Map{}
@@ -176,4 +184,22 @@ func getValue(ctx context.Context, key Key) string {
 		return ""
 	}
 	return val.(string)
+}
+
+type observerKey struct{}
+
+type ObserverFunc func(ctx context.Context, feature string, state bool)
+
+// WithObserver registers a function to be called every time a feature is evaluated by feature.Enabled.
+// Useful for logging feature states.
+func WithObserver(ctx context.Context, fn ObserverFunc) context.Context {
+	return context.WithValue(ctx, observerKey{}, fn)
+}
+
+func getObserver(ctx context.Context) ObserverFunc {
+	val := ctx.Value(observerKey{})
+	if val == nil {
+		return nil
+	}
+	return val.(ObserverFunc)
 }

@@ -188,3 +188,31 @@ func TestFeatureDuplicateName(t *testing.T) {
 		NewFeature(t.Name())
 	})
 }
+
+func TestFeatureObserver(t *testing.T) {
+	ctx := context.Background()
+	f := NewFeature(t.Name())
+
+	t.Run("enabled", func(t *testing.T) {
+		ctx := WithOverride(ctx, f, true)
+		called := false
+		ctx = WithObserver(ctx, func(ctx context.Context, feat string, state bool) {
+			called = true
+			assert.Equal(t, f.name, feat)
+			assert.True(t, state)
+		})
+		f.Enabled(ctx)
+		assert.True(t, called)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		called := false
+		ctx := WithObserver(ctx, func(ctx context.Context, feat string, state bool) {
+			called = true
+			assert.Equal(t, f.name, feat)
+			assert.False(t, state)
+		})
+		f.Enabled(ctx)
+		assert.True(t, called)
+	})
+}

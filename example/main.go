@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 
@@ -12,7 +13,6 @@ import (
 
 var (
 	addr         = flag.String("addr", ":8080", "address to listen on")
-	kill         = flag.Bool("kill", false, "force disable the feature")
 	featOverride = flag.Bool("feat-override", false, "force enable the feature")
 )
 
@@ -41,18 +41,21 @@ func main() {
 	baseCtx := context.Background()
 	baseCtx = coalmine.WithValue(baseCtx, regionKey, "westus")
 
-	if *kill {
-		// TODO
-	}
+	// Log feature states
+	baseCtx = coalmine.WithObserver(baseCtx, func(ctx context.Context, feature string, state bool) {
+		log.Printf("feature %q is enabled: %t", feature, state)
+	})
 
 	// Force the feature on (useful in tests)
 	if *featOverride {
-		baseCtx = coalmine.WithFeatureOverride(baseCtx, myFeature, true)
+		baseCtx = coalmine.WithOverride(baseCtx, myFeature, true)
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		// Set additional values scoped to this individual request
 		ctx := coalmine.WithValue(r.Context(), customerIDKey, r.URL.Query().Get("customer"))
+
+		// Check the feature state
 		fmt.Fprintf(w, "feature enabled: %t\n", myFeature.Enabled(ctx))
 	}
 
