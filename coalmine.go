@@ -162,6 +162,16 @@ func getFeatureOverride(ctx context.Context, feature string) (bool /* state */, 
 	return val.(bool), true
 }
 
+// WithOverrideString forces a given list of feature to be enabled. List is specified as a comma-separated
+// string (str) and optional prefix to be removed from each item (prfx).
+func WithOverrideString(ctx context.Context, prfx, str string) context.Context {
+	for _, chunk := range strings.Split(str, ",") {
+		cleaned := strings.TrimPrefix(chunk, prfx)
+		ctx = context.WithValue(ctx, featureOverrideKey(cleaned), true)
+	}
+	return ctx
+}
+
 type globalOverrideKey struct{}
 
 // WithGlobalOverride forces all features to be either enabled or disabled. Useful in tests.

@@ -171,6 +171,22 @@ func TestFeatureGlobalOverride(t *testing.T) {
 	})
 }
 
+func TestFeatureOverrideString(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("positive", func(t *testing.T) {
+		f := NewFeature(t.Name())
+		ctx := WithOverrideString(ctx, "Foo", "Foo1,Foo"+t.Name())
+		assert.True(t, f.Enabled(ctx))
+	})
+
+	t.Run("negative", func(t *testing.T) {
+		f := NewFeature(t.Name())
+		ctx := WithOverrideString(ctx, "Foo", "Foo1,FooAlso")
+		assert.False(t, f.Enabled(ctx))
+	})
+}
+
 func TestFeatureKillswitch(t *testing.T) {
 	key, value := Key("test-key"), "test-value"
 	f := NewFeature(t.Name(), WithExactMatch(key, value))
