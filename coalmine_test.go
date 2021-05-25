@@ -183,9 +183,9 @@ func TestFeatureKillswitch(t *testing.T) {
 }
 
 func TestFeatureDuplicateName(t *testing.T) {
-	NewFeature(t.Name())
+	NewFeature("FeatureName")
 	assert.Panics(t, func() {
-		NewFeature(t.Name())
+		NewFeature("featureName")
 	})
 }
 

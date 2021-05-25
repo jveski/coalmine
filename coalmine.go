@@ -70,7 +70,7 @@ var featureNames = sync.Map{}
 
 // NewFeature allocates a new Feature using the provided matcher options.
 func NewFeature(name string, opts ...MatcherOption) *Feature {
-	if _, ok := featureNames.LoadOrStore(name, struct{}{}); ok {
+	if _, ok := featureNames.LoadOrStore(strings.ToLower(name), struct{}{}); ok {
 		panic(fmt.Errorf("a coalmine feature with the name %q already exists", name))
 	}
 	f := &Feature{
