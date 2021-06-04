@@ -5,10 +5,11 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"os"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/jveski/coalmine/internal/killswitch"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -22,22 +23,14 @@ var (
 	)
 )
 
-var killswitchCache = sync.Map{}
-
-func warmKillswitchCache() {
-	for _, feat := range strings.Split(os.Getenv("COALMINE_KILLSWITCH"), ",") {
-		killswitchCache.Store(feat, struct{}{})
-	}
-}
-
 func init() {
 	prometheus.MustRegister(enabledMetric)
-	warmKillswitchCache()
 }
 
 // Feature represents a unit of functionality that can be enabled and disabled.
 type Feature struct {
 	name     string
+	ksLevel  int64
 	matchers []*matcher
 }
 
@@ -49,11 +42,14 @@ func (f *Feature) Enabled(ctx context.Context) (ok bool) {
 			observer(ctx, f.name, ok)
 		}()
 	}
+	if ks := getKillswitch(ctx); ks != nil {
+		if lvl, ok := ks.Get(strings.ToLower(f.name)); ok && lvl > f.ksLevel {
+			ok = false
+			return ok
+		}
+	}
 	if enabled, present := getOverride(ctx, f.name); present {
 		ok = enabled
-		return ok
-	}
-	if _, enabled := killswitchCache.Load(f.name); enabled {
 		return ok
 	}
 	for _, matcher := range f.matchers {
@@ -74,13 +70,13 @@ func NewFeature(name string, opts ...MatcherOption) *Feature {
 		panic(fmt.Errorf("a coalmine feature with the name %q already exists", name))
 	}
 	f := &Feature{
-		name:     name,
-		matchers: make([]*matcher, len(opts)),
+		name: name,
 	}
-	for i, opt := range opts {
-		m := &matcher{}
-		opt(m)
-		f.matchers[i] = m
+	for _, opt := range opts {
+		m := opt(f)
+		if m != nil {
+			f.matchers = append(f.matchers, m)
+		}
 	}
 	return f
 }
@@ -106,39 +102,57 @@ func (m *matcher) evaluate(ctx context.Context) bool {
 type Key string
 
 // MatcherOption configures matchers: logical operations against context values set by WithValue.
-type MatcherOption func(*matcher)
+type MatcherOption func(*Feature) *matcher
 
 // WithAND enables a feature when all child matchers are positively matched.
 func WithAND(opts ...MatcherOption) MatcherOption {
-	return func(m *matcher) {
+	return func(f *Feature) *matcher {
+		m := &matcher{}
 		m.matchers = make([]*matcher, len(opts))
 		for i, opt := range opts {
-			child := &matcher{}
-			opt(child)
-			m.matchers[i] = child
+			child := opt(f)
+			if child != nil {
+				m.matchers[i] = child
+			}
 		}
+		return m
 	}
 }
 
 // WithExactMatch enables a feature when a string value passes an equality check
 // against the corresponding context value.
 func WithExactMatch(key Key, value string) MatcherOption {
-	return func(m *matcher) {
+	return func(f *Feature) *matcher {
+		m := &matcher{}
 		m.fn = func(ctx context.Context) bool {
 			return getValue(ctx, key) == value
 		}
+		return m
 	}
 }
 
 // WithPercentage enables a feature for a percent of the possible values of a given context key.
 // Uses Go's Fowler–Noll–Vo hash implementation (hash/fnv.New32a).
 func WithPercentage(key Key, percent uint32) MatcherOption {
-	return func(m *matcher) {
+	return func(f *Feature) *matcher {
+		m := &matcher{}
 		m.fn = func(ctx context.Context) bool {
 			h := fnv.New32a()
 			h.Write([]byte(getValue(ctx, key)))
 			return h.Sum32()%100 < percent
 		}
+		return m
+	}
+}
+
+// WithKillswitchOverride overrides an active killswitch for this feature by level.
+// Overrides are active when the given override level > the killswitch.
+//
+// This allows features to be re-enabled during subsequent releases after being disabled at runtime.
+func WithKillswitchOverride(level int64) MatcherOption {
+	return func(f *Feature) *matcher {
+		f.ksLevel = level
+		return nil
 	}
 }
 
@@ -202,4 +216,29 @@ func getObserver(ctx context.Context) ObserverFunc {
 		return nil
 	}
 	return val.(ObserverFunc)
+}
+
+type killswitchKey struct{}
+
+// WithKillswitch periodically checks a killswitch file to disable features at runtime.
+// Loop polls at the pollInterval with 10% jitter and returns when the context is done.
+//
+// The file referenced at path doesn't need to exist until it's needed.
+// If it does exist, this function will block until it is read to avoid missing state at startup.
+//
+// The file should contain one feature name per line.
+// If the killswitch should be overridable using WithKillswitchOverride, provide a level like feature=1.
+// See WithKillswitchOverride for more details.
+func WithKillswitch(ctx context.Context, path string, pollInterval time.Duration) context.Context {
+	loop := killswitch.NewLoop(path, pollInterval)
+	loop.Start(ctx)
+	return context.WithValue(ctx, killswitchKey{}, loop)
+}
+
+func getKillswitch(ctx context.Context) *killswitch.Loop {
+	val := ctx.Value(killswitchKey{})
+	if val == nil {
+		return nil
+	}
+	return val.(*killswitch.Loop)
 }
