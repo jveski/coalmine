@@ -29,7 +29,6 @@ func init() {
 // Feature represents a unit of functionality that can be enabled and disabled.
 type Feature struct {
 	name     string
-	ksLevel  int64
 	matchers []*matcher
 }
 
@@ -57,12 +56,6 @@ func (f *Feature) Enabled(ctx context.Context) (ok bool) {
 		defer func() {
 			observer(ctx, f.name, ok)
 		}()
-	}
-	if ks := getKillswitch(ctx); ks != nil {
-		if lvl, ok := ks.Get(strings.ToLower(f.name)); ok && lvl > f.ksLevel {
-			ok = false
-			return ok
-		}
 	}
 	if enabled, present := getOverride(ctx, f.name); present {
 		ok = enabled

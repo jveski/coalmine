@@ -3,9 +3,6 @@ package coalmine
 import (
 	"context"
 	"strings"
-	"time"
-
-	"github.com/jveski/coalmine/internal/killswitch"
 )
 
 type featureKey string
@@ -68,29 +65,4 @@ func getObserver(ctx context.Context) ObserverFunc {
 		return nil
 	}
 	return val.(ObserverFunc)
-}
-
-type killswitchKey struct{}
-
-// WithKillswitch periodically checks a killswitch file to disable features at runtime.
-// Loop polls at the pollInterval with 10% jitter and returns when the context is done.
-//
-// The file referenced at path doesn't need to exist until it's needed.
-// If it does exist, this function will block until it is read to avoid missing state at startup.
-//
-// The file should contain one feature name per line.
-// If the killswitch should be overridable using WithKillswitchOverride, provide a level like feature=1.
-// See WithKillswitchOverride for more details.
-func WithKillswitch(ctx context.Context, path string, pollInterval time.Duration) context.Context {
-	loop := killswitch.NewLoop(path, pollInterval)
-	loop.Start(ctx)
-	return context.WithValue(ctx, killswitchKey{}, loop)
-}
-
-func getKillswitch(ctx context.Context) *killswitch.Loop {
-	val := ctx.Value(killswitchKey{})
-	if val == nil {
-		return nil
-	}
-	return val.(*killswitch.Loop)
 }

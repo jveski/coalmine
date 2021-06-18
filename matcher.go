@@ -65,14 +65,3 @@ func WithPercentage(key Key, percent uint32) MatcherOption {
 		return m
 	}
 }
-
-// WithKillswitchOverride overrides an active killswitch for this feature by level.
-// Overrides are active when the given override level > the killswitch.
-//
-// This allows features to be re-enabled during subsequent releases after being disabled at runtime.
-func WithKillswitchOverride(level int64) MatcherOption {
-	return func(f *Feature) *matcher {
-		f.ksLevel = level
-		return nil
-	}
-}

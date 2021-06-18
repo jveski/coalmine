@@ -2,14 +2,10 @@ package coalmine
 
 import (
 	"context"
-	"io/ioutil"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestFeatureNoMatchers(t *testing.T) {
@@ -168,54 +164,6 @@ func TestFeatureOverrideString(t *testing.T) {
 	t.Run("negative", func(t *testing.T) {
 		f := NewFeature(t.Name())
 		ctx := WithOverrideString(ctx, "Foo", "Foo1,FooAlso")
-		assert.False(t, f.Enabled(ctx))
-	})
-}
-
-func TestFeatureKillswitch(t *testing.T) {
-	file, err := ioutil.TempFile("", "")
-	require.NoError(t, err)
-	defer file.Close()
-	testName := t.Name()
-	file.Write([]byte(testName + "=2"))
-
-	key, value := Key("test-key"), "test-value"
-	ctx := WithValue(context.Background(), key, value)
-	ctx = WithKillswitch(ctx, file.Name(), time.Hour)
-
-	t.Run("no override", func(t *testing.T) {
-		f := NewFeature(testName, WithExactMatch(key, value))
-		assert.False(t, f.Enabled(ctx))
-	})
-
-	t.Run("override less than killswitch", func(t *testing.T) {
-		featureNames = sync.Map{}
-		f := NewFeature(testName,
-			WithExactMatch(key, value),
-			WithKillswitchOverride(1))
-		assert.False(t, f.Enabled(ctx))
-	})
-
-	t.Run("override equal to killswitch", func(t *testing.T) {
-		featureNames = sync.Map{}
-		f := NewFeature(testName,
-			WithExactMatch(key, value),
-			WithKillswitchOverride(2))
-		assert.True(t, f.Enabled(ctx))
-	})
-
-	t.Run("override greater than killswitch", func(t *testing.T) {
-		featureNames = sync.Map{}
-		f := NewFeature(testName,
-			WithExactMatch(key, value),
-			WithKillswitchOverride(3))
-		assert.True(t, f.Enabled(ctx))
-	})
-
-	t.Run("negative", func(t *testing.T) {
-		featureNames = sync.Map{}
-		f := NewFeature(testName,
-			WithKillswitchOverride(3))
 		assert.False(t, f.Enabled(ctx))
 	})
 }

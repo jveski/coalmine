@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 
 	"github.com/jveski/coalmine"
 )
@@ -15,7 +14,6 @@ import (
 var (
 	addr         = flag.String("addr", ":8080", "address to listen on")
 	featOverride = flag.Bool("feat-override", false, "force enable the feature")
-	ks           = flag.String("killswitch", "", "path to killswitch file")
 )
 
 const (
@@ -25,10 +23,6 @@ const (
 
 var (
 	myFeature = coalmine.NewFeature("myFeature",
-		// override a previous killswitch
-		// used to re-enale a feature that was previously disabled by a killswitch
-		coalmine.WithKillswitchOverride(1),
-
 		// enable for 50% of customers in westus
 		coalmine.WithAND(
 			coalmine.WithExactMatch(regionKey, "westus"),
@@ -46,11 +40,6 @@ func main() {
 	// Set values that live for the life of the service on the base context
 	baseCtx := context.Background()
 	baseCtx = coalmine.WithValue(baseCtx, regionKey, "westus")
-
-	// Optionally configure a killswitch to disable features at runtime
-	if *ks != "" {
-		baseCtx = coalmine.WithKillswitch(baseCtx, *ks, time.Second)
-	}
 
 	// Log feature states
 	baseCtx = coalmine.WithObserver(baseCtx, func(ctx context.Context, feature string, state bool) {
